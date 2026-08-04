@@ -1,0 +1,805 @@
+--[[
+    🌌 GALAXY HUB v3.0 - CORRIGIDO
+    - UI visível e funcional
+    - ESP com tamanho fixo e proporcional
+    - Aimbot com FOV Circle
+    - Tema Galáxia Roxa
+]]
+
+-- Serviços
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+-- Aguardar carregamento
+if not LocalPlayer then
+    LocalPlayer = Players.LocalPlayer
+end
+
+-- Configurações
+local Settings = {
+    Aimbot = {
+        Enabled = false,
+        Smoothness = 1,
+        FOV = 150,
+        VisibleCheck = true,
+        AimPart = "Head",
+        TeamCheck = false,
+        FOVCircleVisible = true
+    },
+    FOV = {
+        Value = 70
+    },
+    ESP = {
+        Enabled = false,
+        Boxes = true,
+        Tracers = true,
+        Distance = true,
+        HealthBar = true,
+        Names = true,
+        MaxDistance = 1000
+    }
+}
+
+-- Criar ScreenGui primeiro
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "GalaxyHub"
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- FOV Circle
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Visible = false
+FOVCircle.Thickness = 2
+FOVCircle.NumSides = 100
+FOVCircle.Radius = Settings.Aimbot.FOV
+FOVCircle.Color = Color3.fromRGB(180, 100, 255)
+FOVCircle.Filled = false
+
+-- Frame Principal
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 8, 40)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.5, -220, 0.5, -175)
+MainFrame.Size = UDim2.new(0, 440, 0, 380)
+MainFrame.Visible = true
+MainFrame.Active = true
+MainFrame.Draggable = false
+
+-- Borda arredondada
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = MainFrame
+
+-- Gradiente de fundo
+local UIGradient = Instance.new("UIGradient")
+UIGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(80, 20, 140)),
+    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(120, 40, 200)),
+    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(60, 15, 120))
+})
+UIGradient.Rotation = 45
+UIGradient.Parent = MainFrame
+
+-- Título
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Parent = MainFrame
+TitleBar.BackgroundColor3 = Color3.fromRGB(35, 10, 55)
+TitleBar.BorderSizePixel = 0
+TitleBar.Size = UDim2.new(1, 0, 0, 40)
+
+local TitleGradient = Instance.new("UIGradient")
+TitleGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(100, 30, 180)),
+    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(60, 15, 120))
+})
+TitleGradient.Parent = TitleBar
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 12)
+TitleCorner.Parent = TitleBar
+
+-- Título texto
+local TitleText = Instance.new("TextLabel")
+TitleText.Parent = TitleBar
+TitleText.BackgroundTransparency = 1
+TitleText.Size = UDim2.new(1, -120, 1, 0)
+TitleText.Position = UDim2.new(0, 15, 0, 0)
+TitleText.Font = Enum.Font.GothamBold
+TitleText.Text = "🌌 GALAXY HUB v3.0"
+TitleText.TextColor3 = Color3.fromRGB(220, 180, 255)
+TitleText.TextSize = 18
+TitleText.TextXAlignment = Enum.TextXAlignment.Left
+TitleText.TextStrokeTransparency = 0.7
+TitleText.TextStrokeColor3 = Color3.fromRGB(150, 50, 255)
+
+-- Botão Minimizar
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Parent = TitleBar
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(80, 30, 150)
+MinimizeButton.Size = UDim2.new(0, 35, 0, 30)
+MinimizeButton.Position = UDim2.new(1, -85, 0, 5)
+MinimizeButton.Font = Enum.Font.GothamBold
+MinimizeButton.Text = "—"
+MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeButton.TextSize = 18
+MinimizeButton.BorderSizePixel = 0
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 8)
+MinCorner.Parent = MinimizeButton
+
+-- Botão Fechar
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Parent = TitleBar
+CloseButton.BackgroundColor3 = Color3.fromRGB(180, 40, 60)
+CloseButton.Size = UDim2.new(0, 35, 0, 30)
+CloseButton.Position = UDim2.new(1, -40, 0, 5)
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.Text = "✕"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 18
+CloseButton.BorderSizePixel = 0
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.Parent = CloseButton
+
+-- Área arrastável
+local DragArea = Instance.new("TextButton")
+DragArea.Parent = TitleBar
+DragArea.BackgroundTransparency = 1
+DragArea.Size = UDim2.new(1, -120, 1, 0)
+DragArea.Text = ""
+DragArea.ZIndex = 2
+
+-- Container de Abas
+local TabContainer = Instance.new("Frame")
+TabContainer.Name = "TabContainer"
+TabContainer.Parent = MainFrame
+TabContainer.BackgroundColor3 = Color3.fromRGB(20, 5, 35)
+TabContainer.Position = UDim2.new(0, 0, 0, 40)
+TabContainer.Size = UDim2.new(1, 0, 0, 35)
+TabContainer.BorderSizePixel = 0
+
+-- Conteúdo
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Name = "ContentFrame"
+ContentFrame.Parent = MainFrame
+ContentFrame.BackgroundColor3 = Color3.fromRGB(30, 10, 50)
+ContentFrame.Position = UDim2.new(0, 0, 0, 75)
+ContentFrame.Size = UDim2.new(1, 0, 1, -75)
+ContentFrame.BorderSizePixel = 0
+
+local ContentCorner = Instance.new("UICorner")
+ContentCorner.CornerRadius = UDim.new(0, 12)
+ContentCorner.Parent = ContentFrame
+
+-- Função para criar abas
+local function CreateTabButton(name, icon, position)
+    local button = Instance.new("TextButton")
+    button.Name = name.."Tab"
+    button.Parent = TabContainer
+    button.BackgroundColor3 = Color3.fromRGB(40, 15, 70)
+    button.Size = UDim2.new(0.33, -2, 1, 0)
+    button.Position = UDim2.new(0, position * (440/3) + position * 3, 0, 0)
+    button.Font = Enum.Font.GothamSemibold
+    button.Text = icon.." "..name
+    button.TextColor3 = Color3.fromRGB(200, 170, 255)
+    button.TextSize = 13
+    button.BorderSizePixel = 0
+    button.AutoButtonColor = false
+    
+    return button
+end
+
+-- Criar Abas
+local AimbotTab = CreateTabButton("AIMBOT", "🎯", 0)
+local FOVTab = CreateTabButton("FOV", "👁️", 1)
+local ESPTab = CreateTabButton("ESP", "👻", 2)
+
+-- Criar conteúdos das abas
+local AimbotContent = Instance.new("ScrollingFrame")
+AimbotContent.Name = "AimbotContent"
+AimbotContent.Parent = ContentFrame
+AimbotContent.BackgroundTransparency = 1
+AimbotContent.Size = UDim2.new(1, 0, 1, 0)
+AimbotContent.ScrollBarThickness = 4
+AimbotContent.ScrollBarImageColor3 = Color3.fromRGB(150, 50, 255)
+AimbotContent.CanvasSize = UDim2.new(0, 0, 0, 350)
+AimbotContent.Visible = true
+
+local FOVContent = Instance.new("Frame")
+FOVContent.Name = "FOVContent"
+FOVContent.Parent = ContentFrame
+FOVContent.BackgroundTransparency = 1
+FOVContent.Size = UDim2.new(1, 0, 1, 0)
+FOVContent.Visible = false
+
+local ESPContent = Instance.new("ScrollingFrame")
+ESPContent.Name = "ESPContent"
+ESPContent.Parent = ContentFrame
+ESPContent.BackgroundTransparency = 1
+ESPContent.Size = UDim2.new(1, 0, 1, 0)
+ESPContent.Visible = false
+ESPContent.ScrollBarThickness = 4
+ESPContent.ScrollBarImageColor3 = Color3.fromRGB(150, 50, 255)
+ESPContent.CanvasSize = UDim2.new(0, 0, 0, 400)
+
+-- Função de navegação
+local function SwitchTab(tabName)
+    AimbotContent.Visible = (tabName == "AIMBOT")
+    FOVContent.Visible = (tabName == "FOV")
+    ESPContent.Visible = (tabName == "ESP")
+    
+    AimbotTab.BackgroundColor3 = (tabName == "AIMBOT") and Color3.fromRGB(100, 30, 180) or Color3.fromRGB(40, 15, 70)
+    FOVTab.BackgroundColor3 = (tabName == "FOV") and Color3.fromRGB(100, 30, 180) or Color3.fromRGB(40, 15, 70)
+    ESPTab.BackgroundColor3 = (tabName == "ESP") and Color3.fromRGB(100, 30, 180) or Color3.fromRGB(40, 15, 70)
+end
+
+AimbotTab.MouseButton1Click:Connect(function() SwitchTab("AIMBOT") end)
+FOVTab.MouseButton1Click:Connect(function() SwitchTab("FOV") end)
+ESPTab.MouseButton1Click:Connect(function() SwitchTab("ESP") end)
+
+-- Função para criar Toggle
+local function CreateToggle(parent, text, yPos, callback)
+    local frame = Instance.new("Frame")
+    frame.Name = text.."Toggle"
+    frame.Parent = parent
+    frame.BackgroundColor3 = Color3.fromRGB(45, 20, 70)
+    frame.BorderSizePixel = 0
+    frame.Size = UDim2.new(1, -30, 0, 40)
+    frame.Position = UDim2.new(0, 15, 0, yPos)
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = frame
+    
+    local label = Instance.new("TextLabel")
+    label.Parent = frame
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Font = Enum.Font.GothamMedium
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(230, 210, 255)
+    label.TextSize = 14
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local button = Instance.new("TextButton")
+    button.Parent = frame
+    button.BackgroundColor3 = Color3.fromRGB(180, 50, 80)
+    button.BorderSizePixel = 0
+    button.Position = UDim2.new(1, -55, 0.5, -12)
+    button.Size = UDim2.new(0, 45, 0, 24)
+    button.Font = Enum.Font.GothamBold
+    button.Text = "OFF"
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 12
+    
+    local bCorner = Instance.new("UICorner")
+    bCorner.CornerRadius = UDim.new(0, 12)
+    bCorner.Parent = button
+    
+    local enabled = false
+    
+    button.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        if enabled then
+            button.BackgroundColor3 = Color3.fromRGB(120, 50, 200)
+            button.Text = "ON"
+        else
+            button.BackgroundColor3 = Color3.fromRGB(180, 50, 80)
+            button.Text = "OFF"
+        end
+        callback(enabled)
+    end)
+    
+    return button
+end
+
+-- Função para criar Slider
+local function CreateSlider(parent, text, min, max, default, yPos, callback)
+    local frame = Instance.new("Frame")
+    frame.Name = text.."Slider"
+    frame.Parent = parent
+    frame.BackgroundColor3 = Color3.fromRGB(45, 20, 70)
+    frame.BorderSizePixel = 0
+    frame.Size = UDim2.new(1, -30, 0, 65)
+    frame.Position = UDim2.new(0, 15, 0, yPos)
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = frame
+    
+    local label = Instance.new("TextLabel")
+    label.Parent = frame
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(1, -20, 0, 20)
+    label.Position = UDim2.new(0, 10, 0, 5)
+    label.Font = Enum.Font.GothamMedium
+    label.Text = text..": "..default
+    label.TextColor3 = Color3.fromRGB(230, 210, 255)
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local sliderBg = Instance.new("Frame")
+    sliderBg.Parent = frame
+    sliderBg.BackgroundColor3 = Color3.fromRGB(20, 8, 35)
+    sliderBg.BorderSizePixel = 0
+    sliderBg.Position = UDim2.new(0, 10, 0, 35)
+    sliderBg.Size = UDim2.new(1, -20, 0, 8)
+    
+    local sCorner = Instance.new("UICorner")
+    sCorner.CornerRadius = UDim.new(0, 4)
+    sCorner.Parent = sliderBg
+    
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Parent = sliderBg
+    sliderFill.BackgroundColor3 = Color3.fromRGB(150, 60, 255)
+    sliderFill.BorderSizePixel = 0
+    sliderFill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
+    
+    local fCorner = Instance.new("UICorner")
+    fCorner.CornerRadius = UDim.new(0, 4)
+    fCorner.Parent = sliderFill
+    
+    local sliderBtn = Instance.new("TextButton")
+    sliderBtn.Parent = sliderFill
+    sliderBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    sliderBtn.BorderSizePixel = 0
+    sliderBtn.Position = UDim2.new(1, -8, -0.5, 0)
+    sliderBtn.Size = UDim2.new(0, 16, 0, 16)
+    sliderBtn.Text = ""
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(1, 0)
+    btnCorner.Parent = sliderBtn
+    
+    local dragging = false
+    
+    local function updateValue(input)
+        local mousePos = UserInputService:GetMouseLocation()
+        local relativeX = math.clamp((mousePos.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+        local value = math.floor(min + (max - min) * relativeX)
+        sliderFill.Size = UDim2.new(relativeX, 0, 1, 0)
+        label.Text = text..": "..value
+        callback(value)
+    end
+    
+    sliderBtn.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+    
+    sliderBg.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            updateValue()
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateValue()
+        end
+    end)
+end
+
+-- Preencher Aimbot
+CreateToggle(AimbotContent, "Ativar Aimbot", 10, function(value)
+    Settings.Aimbot.Enabled = value
+end)
+
+CreateToggle(AimbotContent, "Mostrar Círculo FOV", 60, function(value)
+    Settings.Aimbot.FOVCircleVisible = value
+    FOVCircle.Visible = value and Settings.Aimbot.Enabled
+end)
+
+CreateSlider(AimbotContent, "Raio do FOV", 50, 500, 150, 110, function(value)
+    Settings.Aimbot.FOV = value
+    FOVCircle.Radius = value
+end)
+
+CreateSlider(AimbotContent, "Suavidade", 1, 20, 1, 185, function(value)
+    Settings.Aimbot.Smoothness = value
+end)
+
+CreateToggle(AimbotContent, "Verificar Visibilidade", 260, function(value)
+    Settings.Aimbot.VisibleCheck = value
+end)
+
+CreateToggle(AimbotContent, "Verificar Times", 310, function(value)
+    Settings.Aimbot.TeamCheck = value
+end)
+
+-- Preencher FOV
+CreateSlider(FOVContent, "Campo de Visão", 30, 120, 70, 10, function(value)
+    Settings.FOV.Value = value
+    Camera.FieldOfView = value
+end)
+
+-- Preencher ESP
+CreateToggle(ESPContent, "Ativar ESP", 10, function(value)
+    Settings.ESP.Enabled = value
+end)
+
+CreateToggle(ESPContent, "Caixas", 60, function(value)
+    Settings.ESP.Boxes = value
+end)
+
+CreateToggle(ESPContent, "Linhas Traçadoras", 110, function(value)
+    Settings.ESP.Tracers = value
+end)
+
+CreateToggle(ESPContent, "Distância", 160, function(value)
+    Settings.ESP.Distance = value
+end)
+
+CreateToggle(ESPContent, "Barra de Vida", 210, function(value)
+    Settings.ESP.HealthBar = value
+end)
+
+CreateToggle(ESPContent, "Nomes", 260, function(value)
+    Settings.ESP.Names = value
+end)
+
+CreateSlider(ESPContent, "Distância Máxima", 100, 2000, 1000, 310, function(value)
+    Settings.ESP.MaxDistance = value
+end)
+
+-- Sistema de Drag
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+DragArea.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+    end
+end)
+
+DragArea.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- Sistema Minimizar
+local isMinimized = false
+local minimizedButton = nil
+
+MinimizeButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    
+    if isMinimized then
+        minimizedButton = Instance.new("TextButton")
+        minimizedButton.Name = "GalaxyButton"
+        minimizedButton.Parent = ScreenGui
+        minimizedButton.BackgroundColor3 = Color3.fromRGB(100, 30, 180)
+        minimizedButton.Size = UDim2.new(0, 50, 0, 50)
+        minimizedButton.Position = UDim2.new(0, 10, 0, 10)
+        minimizedButton.Font = Enum.Font.GothamBold
+        minimizedButton.Text = "🌌"
+        minimizedButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        minimizedButton.TextSize = 24
+        minimizedButton.BorderSizePixel = 0
+        
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(1, 0)
+        btnCorner.Parent = minimizedButton
+        
+        minimizedButton.MouseButton1Click:Connect(function()
+            isMinimized = false
+            MainFrame.Visible = true
+            if minimizedButton then
+                minimizedButton:Destroy()
+                minimizedButton = nil
+            end
+        end)
+        
+        MainFrame.Visible = false
+    else
+        MainFrame.Visible = true
+        if minimizedButton then
+            minimizedButton:Destroy()
+            minimizedButton = nil
+        end
+    end
+end)
+
+-- Botão Fechar
+CloseButton.MouseButton1Click:Connect(function()
+    if minimizedButton then
+        minimizedButton:Destroy()
+    end
+    FOVCircle:Remove()
+    ScreenGui:Destroy()
+end)
+
+-- ============== SISTEMA AIMBOT ==============
+local function getClosestPlayer()
+    local closest = nil
+    local shortestDistance = Settings.Aimbot.FOV
+    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local char = player.Character
+            if char and char:FindFirstChild(Settings.Aimbot.AimPart) then
+                if Settings.Aimbot.TeamCheck and player.Team == LocalPlayer.Team then
+                    continue
+                end
+                
+                local target = char[Settings.Aimbot.AimPart]
+                local screenPos, onScreen = Camera:WorldToViewportPoint(target.Position)
+                
+                if onScreen then
+                    local distance = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                    
+                    if distance <= Settings.Aimbot.FOV then
+                        if Settings.Aimbot.VisibleCheck then
+                            local ray = Ray.new(Camera.CFrame.Position, (target.Position - Camera.CFrame.Position).Unit * 500)
+                            local hit, pos = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character})
+                            if hit and hit:IsDescendantOf(char) == false then
+                                continue
+                            end
+                        end
+                        
+                        if distance < shortestDistance then
+                            shortestDistance = distance
+                            closest = player
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return closest
+end
+
+-- ============== LOOP PRINCIPAL ==============
+RunService.RenderStepped:Connect(function()
+    -- Atualizar FOV Circle
+    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    FOVCircle.Visible = Settings.Aimbot.FOVCircleVisible and Settings.Aimbot.Enabled
+    
+    -- Aimbot
+    if Settings.Aimbot.Enabled then
+        local target = getClosestPlayer()
+        if target and target.Character then
+            local aimPart = target.Character:FindFirstChild(Settings.Aimbot.AimPart)
+            if aimPart then
+                local targetPos = aimPart.Position
+                if Settings.Aimbot.Smoothness > 1 then
+                    Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, targetPos), 1 / Settings.Aimbot.Smoothness)
+                else
+                    Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
+                end
+            end
+        end
+    end
+    
+    -- FOV
+    if Camera.FieldOfView ~= Settings.FOV.Value then
+        Camera.FieldOfView = Settings.FOV.Value
+    end
+end)
+
+-- ============== SISTEMA ESP CORRIGIDO ==============
+local ESPObjects = {}
+
+local function createESP()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and not ESPObjects[player] then
+            local drawings = {}
+            
+            drawings.Box = Drawing.new("Square")
+            drawings.Box.Visible = false
+            drawings.Box.Thickness = 2
+            drawings.Box.Filled = false
+            drawings.Box.Color = Color3.fromRGB(180, 100, 255)
+            
+            drawings.BoxOutline = Drawing.new("Square")
+            drawings.BoxOutline.Visible = false
+            drawings.BoxOutline.Thickness = 4
+            drawings.BoxOutline.Filled = false
+            drawings.BoxOutline.Color = Color3.fromRGB(0, 0, 0)
+            
+            drawings.Tracer = Drawing.new("Line")
+            drawings.Tracer.Visible = false
+            drawings.Tracer.Thickness = 1.5
+            drawings.Tracer.Color = Color3.fromRGB(180, 100, 255)
+            
+            drawings.Distance = Drawing.new("Text")
+            drawings.Distance.Visible = false
+            drawings.Distance.Size = 15
+            drawings.Distance.Center = true
+            drawings.Distance.Outline = true
+            drawings.Distance.Color = Color3.fromRGB(255, 255, 255)
+            
+            drawings.HealthBg = Drawing.new("Square")
+            drawings.HealthBg.Visible = false
+            drawings.HealthBg.Filled = true
+            drawings.HealthBg.Color = Color3.fromRGB(30, 30, 30)
+            
+            drawings.HealthBar = Drawing.new("Square")
+            drawings.HealthBar.Visible = false
+            drawings.HealthBar.Filled = true
+            drawings.HealthBar.Color = Color3.fromRGB(0, 255, 100)
+            
+            drawings.Name = Drawing.new("Text")
+            drawings.Name.Visible = false
+            drawings.Name.Size = 14
+            drawings.Name.Center = true
+            drawings.Name.Outline = true
+            drawings.Name.Color = Color3.fromRGB(180, 100, 255)
+            
+            ESPObjects[player] = drawings
+        end
+    end
+end
+
+local function updateESP()
+    for player, drawings in pairs(ESPObjects) do
+        local char = player.Character
+        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        local head = char and char:FindFirstChild("Head")
+        
+        if char and humanoid and root and head and humanoid.Health > 0 then
+            local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+            local rootPos = Camera:WorldToViewportPoint(root.Position)
+            
+            if onScreen then
+                local myChar = LocalPlayer.Character
+                local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                local distance = myRoot and (myRoot.Position - root.Position).Magnitude or 0
+                
+                if distance <= Settings.ESP.MaxDistance then
+                    -- TAMANHO FIXO DA CAIXA (não escala com distância)
+                    local boxWidth = 40
+                    local boxHeight = 60
+                    
+                    -- Box
+                    if Settings.ESP.Boxes then
+                        drawings.BoxOutline.Visible = true
+                        drawings.BoxOutline.Size = Vector2.new(boxWidth, boxHeight)
+                        drawings.BoxOutline.Position = Vector2.new(headPos.X - boxWidth/2, headPos.Y - boxHeight/2)
+                        
+                        drawings.Box.Visible = true
+                        drawings.Box.Size = Vector2.new(boxWidth, boxHeight)
+                        drawings.Box.Position = Vector2.new(headPos.X - boxWidth/2, headPos.Y - boxHeight/2)
+                    else
+                        drawings.Box.Visible = false
+                        drawings.BoxOutline.Visible = false
+                    end
+                    
+                    -- Tracer
+                    if Settings.ESP.Tracers then
+                        drawings.Tracer.Visible = true
+                        drawings.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                        drawings.Tracer.To = Vector2.new(headPos.X, headPos.Y + boxHeight/2)
+                    else
+                        drawings.Tracer.Visible = false
+                    end
+                    
+                    -- Distance
+                    if Settings.ESP.Distance then
+                        drawings.Distance.Visible = true
+                        drawings.Distance.Text = math.floor(distance).."m"
+                        drawings.Distance.Position = Vector2.new(headPos.X, headPos.Y + boxHeight/2 + 15)
+                    else
+                        drawings.Distance.Visible = false
+                    end
+                    
+                    -- Health Bar
+                    if Settings.ESP.HealthBar then
+                        local healthPercent = humanoid.Health / humanoid.MaxHealth
+                        local barWidth = 3
+                        
+                        drawings.HealthBg.Visible = true
+                        drawings.HealthBg.Size = Vector2.new(barWidth, boxHeight)
+                        drawings.HealthBg.Position = Vector2.new(headPos.X - boxWidth/2 - 5, headPos.Y - boxHeight/2)
+                        
+                        drawings.HealthBar.Visible = true
+                        drawings.HealthBar.Size = Vector2.new(barWidth, boxHeight * healthPercent)
+                        drawings.HealthBar.Position = Vector2.new(headPos.X - boxWidth/2 - 5, headPos.Y + boxHeight/2 - (boxHeight * healthPercent))
+                        
+                        if healthPercent > 0.6 then
+                            drawings.HealthBar.Color = Color3.fromRGB(0, 255, 100)
+                        elseif healthPercent > 0.3 then
+                            drawings.HealthBar.Color = Color3.fromRGB(255, 200, 0)
+                        else
+                            drawings.HealthBar.Color = Color3.fromRGB(255, 50, 50)
+                        end
+                    else
+                        drawings.HealthBg.Visible = false
+                        drawings.HealthBar.Visible = false
+                    end
+                    
+                    -- Name
+                    if Settings.ESP.Names then
+                        drawings.Name.Visible = true
+                        drawings.Name.Text = player.Name
+                        drawings.Name.Position = Vector2.new(headPos.X, headPos.Y - boxHeight/2 - 15)
+                    else
+                        drawings.Name.Visible = false
+                    end
+                else
+                    for _, d in pairs(drawings) do
+                        d.Visible = false
+                    end
+                end
+            else
+                for _, d in pairs(drawings) do
+                    d.Visible = false
+                end
+            end
+        else
+            for _, d in pairs(drawings) do
+                d.Visible = false
+            end
+        end
+    end
+end
+
+-- Loop ESP
+RunService.RenderStepped:Connect(function()
+    if Settings.ESP.Enabled then
+        createESP()
+        updateESP()
+    else
+        for player, drawings in pairs(ESPObjects) do
+            for _, d in pairs(drawings) do
+                d:Remove()
+            end
+        end
+        ESPObjects = {}
+    end
+end)
+
+-- Limpeza
+Players.PlayerRemoving:Connect(function(player)
+    if ESPObjects[player] then
+        for _, d in pairs(ESPObjects[player]) do
+            d:Remove()
+        end
+        ESPObjects[player] = nil
+    end
+end)
+
+-- Inicialização
+SwitchTab("AIMBOT")
+print("🌌 Galaxy Hub v3.0 carregado com sucesso!")
+print("✅ UI visível e funcional")
+print("✅ ESP com tamanho fixo")
+print("✅ Aimbot com FOV Circle")
